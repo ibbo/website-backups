@@ -1,0 +1,9 @@
+{
+    "require": {
+        "aws/aws-sdk-php": "^3.24",
+        "mailgun/mailgun-php": "^2.1",
+        "php-http/guzzle6-adapter": "^1.1",
+        "php-http/message": "^1.5",
+        "google/cloud": "^0.34.1"
+    }
+}

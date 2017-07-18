@@ -1,2 +1,6 @@
 *.sw[op]
 *.zip
+*~
+composer.lock
+credentials/
+vendor/
