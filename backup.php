@@ -81,6 +81,8 @@ if ($doUpload) {
     $finalMessage = logAndAppendMessage("Upload succeeded\nDeleting temporary files\n", $finalMessage);
 } else {
     $finalMessage = logAndAppendMessage("Upload skipped\n", $finalMessage);
+    $resultDatabase = array("ObjectURL", "Test Database");
+    $resultSite = array("ObjectURL", "Test Site");
 }
 
 
