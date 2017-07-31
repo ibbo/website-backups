@@ -4,6 +4,8 @@ require __DIR__ . '/vendor/autoload.php';
 
 use Mailgun\Mailgun;
 
+use Google\Cloud\Storage\StorageClient;
+
 // Parse command-line options.
 $shortopts = "t"; // -t Test mode, don't upload or email anything
 $longopts = array("no-upload", "no-email"); // --no-upload don't upload anything, --no-email don't send any emails
@@ -51,38 +53,33 @@ $finalMessage = logAndAppendMessage("Creating zip of site\n", $finalMessage);
 zipfile("/var/www/html/", $siteZipFile);
 
 if ($doUpload) {
-    $finalMessage = logAndAppendMessage("Uploading to S3\n", $finalMessage);
-    $s3 = new Aws\S3\S3Client([
-        'version' => 'latest',
-        'region'  => 'us-east-1'
+    $projectId = 'rscds-youth-branch-main-server';
+
+    $finalMessage = logAndAppendMessage("Uploading to Google Cloud Storage\n", $finalMessage);
+
+    $gcs = new StorageClient([
+        'projectId' => $projectId
     ]);
 
-    try {
-        $resultDatabase = $s3->putObject([
-            'Bucket' => 'rscdsyouth-website-backups',
-            'Key' => "$databaseBackupName$ext",
-            'Body' => fopen($databaseBackupFile, 'r'),
-            'ACL' => 'public-read',
-        ]);
-    } catch (Aws\Exception\S3Exception $e) {
-        $finalMessage = logAndAppendMessage("There was an error uploading the file.\n" . $e, $finalMessage);
-    }
+    $bucketName = 'rscds-youth-website-backups';
+    $file = fopen($databaseBackupFile, 'r');
+    $bucket = $gcs->bucket($bucketName);
+    $resultDatabaseObj = $bucket->file($file, [
+        'name' => "$databaseBackupName$ext"
+    ]);
+    $resultDatabase = $resultDatabaseObj->gcsUri();
 
-    try {
-        $resultSite = $s3->putObject([
-            'Bucket' => 'rscdsyouth-website-backups',
-            'Key' => "$siteZipName$zipExt",
-            'Body' => fopen($siteZipFile, 'r'),
-            'ACL' => 'public-read',
-        ]);
-    } catch (Aws\Exception\S3Exception $e) {
-        $finalMessage = logAndAppendMessage("There was an error uploading the file.\n" . $e, $finalMessage);
-    }
+    $file = fopen($siteZipFile, 'r');
+    $resultSiteObj = $bucket->file($file, [
+        'name' => "$siteZipName$zipExt"
+    ]);
+    $resultSite = $resultSiteObj->gcsUri();
+
     $finalMessage = logAndAppendMessage("Upload succeeded\nDeleting temporary files\n", $finalMessage);
 } else {
     $finalMessage = logAndAppendMessage("Upload skipped\n", $finalMessage);
-    $resultDatabase = array("ObjectURL" => "Test Database");
-    $resultSite = array("ObjectURL" => "Test Site");
+    $resultDatabase = "Test Database";
+    $resultSite = "Test Site";
 }
 
 
@@ -94,9 +91,9 @@ $finalMessage = logAndAppendMessage("Backup complete\n", $finalMessage);
 $body = "Website backup successful. Results: \n"
     . $finalMessage . "\n\n"
     . "Database file: " 
-    . $resultDatabase['ObjectURL'] . "\n"
+    . $resultDatabase . "\n"
     .  "Site file: "
-    . $resultSite['ObjectURL'] . "\n";
+    . $resultSite . "\n";
 
 $mailgunKey = $credsObj['mailgunkey'];
 if ($sendEmail) {
