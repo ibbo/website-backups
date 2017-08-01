@@ -64,13 +64,13 @@ if ($doUpload) {
     $bucketName = 'rscds-youth-website-backups';
     $file = fopen($databaseBackupFile, 'r');
     $bucket = $gcs->bucket($bucketName);
-    $resultDatabaseObj = $bucket->file($file, [
+    $resultDatabaseObj = $bucket->upload($file, [
         'name' => "$databaseBackupName$ext"
     ]);
     $resultDatabase = $resultDatabaseObj->gcsUri();
 
     $file = fopen($siteZipFile, 'r');
-    $resultSiteObj = $bucket->file($file, [
+    $resultSiteObj = $bucket->upload($file, [
         'name' => "$siteZipName$zipExt"
     ]);
     $resultSite = $resultSiteObj->gcsUri();
