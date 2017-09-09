@@ -1,9 +1,27 @@
 #!/bin/bash
 
 backup_zip=$1
+database_backup=$2
+sql_password=$3
+joomla_password=$4
 
 rm -rf /var/www/html
 unzip $backup_zip -d /var/www
+
+cat << EOF > create_joomla_user.sql
+CREATE DATABASE joomladb;
+CREATE USER joomlauser@localhost;
+SET PASSWORD FOR 'joomlauser'@'localhost' = PASSWORD("$4");
+GRANT ALL PRIVILEGES ON joomladb.* TO 'joomlauser'@'localhost' IDENTIFIED BY '$4' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+quit
+EOF
+
+mysql -u root -p$3 < create_joomla_user.sql
+
+sed -i '1s/^/USE joomladb;\n/' $2
+
+mysql -u root -p$3 < $2
 
 sudo a2enmod rewrite
 rm /etc/apache2/sites-available/joomla.conf
