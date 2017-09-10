@@ -5,8 +5,8 @@ database_backup=$2
 sql_password=$3
 joomla_password=$4
 
-rm -rf /var/www/html
-unzip $backup_zip -d /var/www
+sudo rm -rf /var/www/html
+sudo unzip $backup_zip -d /var/www
 
 cat << EOF > create_joomla_user.sql
 CREATE DATABASE joomladb;
@@ -26,8 +26,6 @@ mysql -u root -p$3 < $2
 sudo a2enmod rewrite
 rm /etc/apache2/sites-available/joomla.conf
 rm /etc/apache2/sites-enabled/joomla.conf
-touch /etc/apache2/sites-available/joomla.conf
-ln -s /etc/apache2/sites-available/joomla.conf /etc/apache2/sites-enabled/joomla.conf
 
 public_hostname=$(curl http://169.254.169.254/latest/meta-data/public-hostname)
 
@@ -46,5 +44,6 @@ ErrorLog /var/log/apache2/rscds-youth-test-site-error_log
 CustomLog /var/log/apache2/rscds-youth-test-site-access_log common
 </VirtualHost>
 EOF
+ln -s /etc/apache2/sites-available/joomla.conf /etc/apache2/sites-enabled/joomla.conf
 
-systemctl restart apache2.service
+sudo systemctl restart apache2.service
