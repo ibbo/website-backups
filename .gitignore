@@ -1,6 +1,7 @@
 *.sw[op]
 *.zip
 *~
+*.pyc
 composer.lock
 credentials/
 vendor/
