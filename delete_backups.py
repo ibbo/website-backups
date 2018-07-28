@@ -5,7 +5,10 @@ import sys
 from google.cloud import storage
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
-from pprint import pprint
+from pprint import pprint, pformat
+
+import json
+import requests
 
 import itertools as it
 
@@ -76,35 +79,68 @@ def display_blobs():
     print("Blobs over 1 month, except last in month: ")
     pprint(monthly_old_blobs)
 
-def delete_old_blobs():
+def delete_old_blobs(mailgunkey = None):
     blobs = get_blobs()
     old_blobs = get_old_blobs(blobs)
     print('Deleting %d old backup files' % (len(old_blobs)))
-    delete_blobs(old_blobs)
+    if len(old_blobs) > 0:
+        delete_blobs(old_blobs)
+        email_backup_message("Website backups deleted backups older than a year", pformat(old_blobs), mailgunkey)
 
-def delete_large_blobs():
+def delete_large_blobs(mailgunkey = None):
     blobs = get_blobs()
     large_blobs = get_large_blobs(blobs)
     print('Deleting %d large blobs' % (len(large_blobs)))
     delete_blobs(large_blobs)
 
-def delete_old_monthly_blobs():
+def delete_old_monthly_blobs(mailgunkey = None):
     blobs = get_blobs()
     monthly_blobs = get_all_old_blobs_except_last_in_month(blobs)
     print('Deleting %d old monthly backup files' % (len(monthly_blobs)))
-    delete_blobs(monthly_blobs)
+    if len(monthly_blobs) > 0:
+        delete_blobs(monthly_blobs)
+        email_backup_message("Website backups deleted old monthly backups", pformat(monthly_blobs), mailgunkey)
 
 def delete_blobs(blobs):
     for i in blobs:
         print('Deleting blob: %s' %(i))
         i.delete()
 
+def load_creds(credsfile):
+    with open(credsfile) as f:
+        data = json.load(f)
+    return data
+
+def test_email(mailgunkey = None):
+    if mailgunkey:
+        return requests.post(
+            "https://api.mailgun.net/v3/mail.rscds-youth.org/messages",
+            auth=("api", mailgunkey),
+            data={"from": "Website Backups <website@rscds-youth.org>",
+                  "to": ["thomas.ibbotson@gmail.com"],
+                  "subject": "Website backups test email",
+                  "text": "This is a test"})
+
+def email_backup_message(subject="", text="", mailgunkey = None):
+    if mailgunkey:
+        return requests.post(
+            "https://api.mailgun.net/v3/mail.rscds-youth.org/messages",
+            auth=("api", mailgunkey),
+            data={"from": "Website Backups <website@rscds-youth.org>",
+                  "to": ["info@rscds-youth.org"],
+                  "subject": subject,
+                  "text": text})
+
 if __name__ == '__main__':
+    creds = load_creds('credentials/app_creds.json')
     if sys.argv[1] == 'display':
         display_blobs()   
     elif sys.argv[1] == 'delete-old':
-        delete_old_blobs()
+        delete_old_blobs(creds['mailgunkey'])
     elif sys.argv[1] == 'delete-large':
-        delete_large_blobs()
+        delete_large_blobs(creds['mailgunkey'])
     elif sys.argv[1] == 'delete-monthly':
-        delete_old_monthly_blobs()
+        delete_old_monthly_blobs(creds['mailgunkey'])
+    elif sys.argv[1] == 'test-email':
+        test_email(creds['mailgunkey'])
+
