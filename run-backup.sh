@@ -9,4 +9,4 @@ php /home/rscds/website-backups/backup.php $*
 python /home/rscds/website-backups/delete_backups.py delete-monthly
 
 # And backups older than a year
-python /home/rsdcs/website-backups/delete_backups.py delete-old
+python /home/rscds/website-backups/delete_backups.py delete-old
